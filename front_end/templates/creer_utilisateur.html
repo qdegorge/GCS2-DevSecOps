@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 700px; margin: 40px auto; padding: 0 20px;">
+    <a href="{{ url_for('dashboard') }}" style="text-decoration: none; color: #64748b; font-weight: bold; display: inline-flex; align-items: center; margin-bottom: 20px; transition: 0.2s;">
+        <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Retour au Dashboard
+    </a>
+
+    <div style="background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <div style="background: #3498db; color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 1.5rem;">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <h2 style="color: #1e293b; margin: 0;">Créer un Utilisateur</h2>
+            <p style="color: #64748b; margin-top: 5px;">Remplissez les informations pour ajouter un membre à l'intranet</p>
+        </div>
+
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div style="margin-bottom: 25px;">
+                <h4 style="border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; color: #3498db; margin-bottom: 15px;">
+                    <i class="fas fa-lock"></i> Identifiants
+                </h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #475569;">Nom d'utilisateur</label>
+                        <input type="text" name="username" class="input-field" required placeholder="ex: jdupont" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #475569;">Mot de passe</label>
+                        <input type="password" name="password" class="input-field" required placeholder="••••••••" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 25px;">
+                <h4 style="border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; color: #3498db; margin-bottom: 15px;">
+                    <i class="fas fa-id-card"></i> État Civil
+                </h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #475569;">Prénom</label>
+                        <input type="text" name="prenom" class="input-field" required placeholder="Jean" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #475569;">Nom</label>
+                        <input type="text" name="nom" class="input-field" required placeholder="Dupont" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h4 style="border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; color: #3498db; margin-bottom: 15px;">
+                    <i class="fas fa-briefcase"></i> Affectation
+                </h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #475569;">Rôle</label>
+                        <select name="role" id="role-select" class="input-field" required onchange="toggleClasseField()" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; background-color: #f8fafc;">
+                            <option value="etudiant">Étudiant</option>
+                            <option value="professeur">Professeur</option>
+                            <option value="admin">Administrateur</option>
+                        </select>
+                    </div>
+                    
+                    <div id="classe-container">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #475569;">Classe</label>
+                        <select name="classe_id" class="input-field" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                            <option value="">-- Sélectionner une classe --</option>
+                            {% for c in classes %}
+                                <option value="{{ c.id }}">{{ c.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <p id="role-info" style="font-size: 0.85rem; color: #94a3b8; margin-top: 10px; font-style: italic; display: none;">
+                    * Les professeurs et admins ne sont pas affectés à une classe en tant qu'élèves.
+                </p>
+            </div>
+
+            <button type="submit" class="btn-action" style="width: 100%; background: #3498db; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);">
+                <i class="fas fa-check-circle"></i> Confirmer la création
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleClasseField() {
+    const role = document.getElementById('role-select').value;
+    const classeContainer = document.getElementById('classe-container');
+    const roleInfo = document.getElementById('role-info');
+
+    if (role === 'etudiant') {
+        classeContainer.style.visibility = 'visible';
+        classeContainer.style.opacity = '1';
+        roleInfo.style.display = 'none';
+    } else {
+        // On cache le champ classe mais on garde l'espace pour éviter les sauts de mise en page
+        classeContainer.style.visibility = 'hidden';
+        classeContainer.style.opacity = '0';
+        roleInfo.style.display = 'block';
+    }
+}
+
+// Initialisation au chargement de la page
+document.addEventListener('DOMContentLoaded', toggleClasseField);
+</script>
+
+<style>
+    .input-field:focus {
+        outline: none;
+        border-color: #3498db !important;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+    .btn-action:hover {
+        background: #2980b9 !important;
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Section CSS pour éviter les erreurs de syntaxe dans le HTML */
+    .badge-admin { background-color: #fee2e2 !important; color: #991b1b !important; }
+    .badge-prof  { background-color: #e0f2fe !important; color: #0369a1 !important; }
+    .badge-eleve { background-color: #dcfce7 !important; color: #166534 !important; }
+
+    .role-badge-base {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: inline-block;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .user-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .user-table th {
+        background: #f8fafc;
+        padding: 15px;
+        text-align: left;
+        color: #64748b;
+        font-size: 0.85rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .user-table td {
+        padding: 15px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .btn-save-mini {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .btn-save-mini:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+    }
+</style>
+
+<div style="padding: 30px; max-width: 1200px; margin: 0 auto;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <div>
+            <h2 style="color: #1e293b; margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-users-cog" style="color: #3498db;"></i> Administration des Utilisateurs
+            </h2>
+            <p style="color: #64748b; margin-top: 5px;">Gérez les rôles, les affectations et les accès de l'établissement.</p>
+        </div>
+        <a href="{{ url_for('creer_utilisateur') }}" class="btn-action" style="background: #3498db; color: white; width: auto; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-user-plus"></i> Créer un utilisateur
+        </a>
+    </div>
+
+    <div style="box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 12px; border: 1px solid #e2e8f0;">
+        <table class="user-table">
+            <thead>
+                <tr>
+                    <th>Utilisateur</th>
+                    <th>Rôle</th>
+                    <th>Email</th>
+                    <th>Classe / Affectation</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in utilisateurs %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 600; color: #1e293b;">{{ user.prenom }} {{ user.nom }}</div>
+                        <div style="font-size: 0.8rem; color: #94a3b8;">@{{ user.username }}</div>
+                    </td>
+
+                    <td>
+                        {% if user.role == 'admin' %}
+                            {% set role_class = 'badge-admin' %}
+                        {% elif user.role == 'professeur' %}
+                            {% set role_class = 'badge-prof' %}
+                        {% else %}
+                            {% set role_class = 'badge-eleve' %}
+                        {% endif %}
+                        <span class="role-badge-base {{ role_class }}">
+                            {{ user.role }}
+                        </span>
+                    </td>
+
+                    <td style="color: #64748b; font-size: 0.9rem;">
+                        {{ user.email if user.email else 'Non défini' }}
+                    </td>
+
+                    <td>
+                        {% if user.role == 'etudiant' %}
+                        <form action="{{ url_for('modifier_user_classe', user_id=user.id) }}" method="POST" style="display: flex; gap: 8px; align-items: center;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <select name="classe_id" style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem; background: #f8fafc;">
+                                <option value="">-- Aucune --</option>
+                                {% for c in classes %}
+                                    <option value="{{ c.id }}" {% if user.classe_id == c.id %}selected{% endif %}>{{ c.nom }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn-save-mini" title="Enregistrer la modification">
+                                <i class="fas fa-save"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <span style="color: #cbd5e1; font-size: 0.85rem; font-style: italic;">N/A ({{ user.role }})</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <div style="display: flex; gap: 15px; color: #94a3b8;">
+                            <i class="fas fa-edit" style="cursor: not-allowed;" title="Modifier le profil (Bientôt)"></i>
+                            <i class="fas fa-trash-alt" style="color: #ef4444; cursor: pointer;" title="Supprimer l'utilisateur"></i>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 25px;">
+        <a href="{{ url_for('dashboard') }}" style="color: #64748b; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-chevron-left"></i> Retour au tableau de bord
+        </a>
+    </div>
+</div>
+{% endblock %}

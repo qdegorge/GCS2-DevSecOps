@@ -1,0 +1,717 @@
+{% extends "base.html" %}
+
+{% block content %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
+<style>
+    .tab-nav { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; flex-wrap: wrap; }
+    .tab-nav button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 8px 8px 0 0; background: #f1f5f9; font-weight: bold; color: #64748b; transition: 0.3s; }
+    .tab-nav button:hover { background: #e2e8f0; }
+    .tab-nav button.active { background: #1e293b; color: white; }
+    .view-section { display: none; animation: fadeIn 0.4s ease-in-out; }
+    .view-section.active { display: block; }
+    @keyframes fadeIn { from {opacity: 0; transform: translateY(5px);} to {opacity: 1; transform: translateY(0);} }
+    .card-messagerie { background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+
+    /* Grille EDT */
+    .edt-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .edt-title { margin: 0; color: #1e293b; font-size: 1.2rem; }
+    .nav-arrows button, .btn-today, .view-toggles button { padding: 8px 15px; border: 1px solid #cbd5e1; background: white; border-radius: 6px; cursor: pointer; color: #1e293b; font-weight: bold; }
+    .view-toggles button.active { background: #1e293b; color: white; border-color: #1e293b; }
+
+    .grid-header { display: flex; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 10px; font-weight: bold; text-align: center; color: #475569; }
+    .grid-corner { width: 60px; }
+    .grid-day { flex: 1; }
+    .time-slot { height: 60px; text-align: right; padding-right: 15px; font-size: 0.8rem; color: #94a3b8; border-bottom: 1px solid transparent; transform: translateY(-10px); }
+    .grid-column { flex: 1; position: relative; border-left: 1px solid #e2e8f0; }
+    .grid-column::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: linear-gradient(to bottom, #f8fafc 1px, transparent 1px); background-size: 100% 60px; pointer-events: none; z-index: 0; }
+    
+    .course-card { position: absolute; left: 4px; right: 4px; border-radius: 6px; padding: 8px; font-size: 0.85rem; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: white; z-index: 10; border-left: 4px solid rgba(0,0,0,0.2); }
+    .course-title { font-weight: bold; margin-bottom: 4px; font-size: 0.9rem; }
+    
+    .month-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold; margin-bottom: 10px; color: #475569; }
+    .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+    .month-cell { min-height: 100px; border: 1px solid #e2e8f0; padding: 5px; border-radius: 6px; background: white; }
+    .month-cell.today { border: 2px solid #3498db; }
+    .month-day-num { font-weight: bold; color: #64748b; display: block; margin-bottom: 5px; }
+    .month-event { color: white; font-size: 0.75rem; padding: 4px; margin-bottom: 3px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .color-0 { background-color: #3498db; } .color-1 { background-color: #e67e22; } .color-2 { background-color: #2ecc71; } .color-3 { background-color: #9b59b6; } .color-4 { background-color: #1abc9c; }
+    
+    .btn-action { display: block; padding: 12px; border-radius: 6px; text-decoration: none; font-weight: bold; text-align: center; border: none; cursor: pointer; transition: 0.2s; width: 100%; box-sizing: border-box; }
+    .btn-action:hover { opacity: 0.9; }
+    .input-field { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+
+    .texte-vert { color: #27ae60 !important; }
+    .texte-rouge { color: #e74c3c !important; }
+    .texte-gris { color: #94a3b8 !important; }
+</style>
+
+<div class="card-content">
+    
+    <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+        <h1 style="border: none; margin: 0;">Bienvenue, {{ current_user.prenom | capitalize }} {{ current_user.nom | capitalize }} !</h1>
+        <div style="text-align: right;">
+            <span class="role-badge" style="background: #1e293b; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem;">{{ current_user.role | upper }}</span>
+            <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #64748b;">Classe : {{ classe if classe else 'N/A' }}</p>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          {% if category == 'danger' %}
+            <div style="padding: 15px; margin-bottom: 20px; border-radius: 6px; background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171;">
+              <i class="fas fa-exclamation-triangle"></i> {{ message }}
+            </div>
+          {% else %}
+            <div style="padding: 15px; margin-bottom: 20px; border-radius: 6px; background-color: #dcfce7; color: #166534; border: 1px solid #4ade80;">
+              <i class="fas fa-check-circle"></i> {{ message }}
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="tab-nav">
+        <button onclick="showSection('vue-principale')" id="btn-vue-principale" class="active"><i class="fas fa-home"></i> Tableau de bord</button>
+        {% if current_user.role in ['admin', 'professeur'] %}
+        <button onclick="showSection('vue-classes')" id="btn-vue-classes"><i class="fas fa-users"></i> Classes & Annuaire</button>
+        {% endif %}
+        <button onclick="showSection('vue-messagerie')" id="btn-vue-messagerie"><i class="fas fa-envelope"></i> Messagerie</button>
+        <button onclick="showSection('vue-profil')" id="btn-vue-profil"><i class="fas fa-user"></i> Mon Profil</button>
+    </div>
+
+    <div id="vue-principale" class="view-section active">
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            
+            <main class="content-area" style="flex: 1; min-width: 60%;">
+                <div class="content-box" style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <div class="edt-container">
+                        <div class="edt-header">
+                            <h2 id="current-date-display" class="edt-title">Emploi du temps</h2>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <div class="nav-arrows">
+                                    <button onclick="changePeriod(-1)"><i class="fas fa-chevron-left"></i></button>
+                                    <button onclick="changePeriod(1)"><i class="fas fa-chevron-right"></i></button>
+                                </div>
+                                <button class="btn-today" onclick="changeView('aujourdhui')">Aujourd'hui</button>
+                                <div class="view-toggles" style="display: flex; gap: 5px;">
+                                    <button id="btn-view-semaine" class="active" onclick="changeView('semaine')">Semaine</button>
+                                    <button id="btn-view-mois" onclick="changeView('mois')">Mois</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="week-view-container">
+                            <div class="grid-header">
+                                <div class="grid-corner"></div><div class="grid-day">Lundi</div><div class="grid-day">Mardi</div><div class="grid-day">Mercredi</div><div class="grid-day">Jeudi</div><div class="grid-day">Vendredi</div>
+                            </div>
+                            <div class="grid-body" style="display: flex;">
+                                <div id="grid-times" style="width: 60px;"></div>
+                                <div style="display: flex; flex: 1;"> 
+                                    <div class="grid-column" id="day-1"></div><div class="grid-column" id="day-2"></div><div class="grid-column" id="day-3"></div><div class="grid-column" id="day-4"></div><div class="grid-column" id="day-5"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="month-view-container" style="display: none;">
+                            <div class="month-header">
+                                <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+                            </div>
+                            <div class="month-grid" id="month-grid-body"></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <aside style="display: flex; flex-direction: column; gap: 20px; width: 320px;">
+                {% if current_user.role == 'admin' %}
+                <div class="stat-card" style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <h3 style="margin-top: 0; color: #e74c3c;"><i class="fas fa-bolt"></i> Actions Rapides</h3>
+                    <a href="/admin/utilisateurs" class="btn-action" style="background: #f1f5f9; color: #1e293b; margin-bottom: 10px;">Gérer les utilisateurs</a>
+                    <a href="/creer_utilisateur" class="btn-action" style="background: #3498db; color: white;">+ Créer un utilisateur</a>
+                </div>
+                {% endif %}
+
+               {% if current_user.role == 'professeur' %}
+                <div class="stat-card" style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding-bottom: 30px;">
+                    <h3 style="margin-top: 0; font-size: 1.1rem; color: #1e293b;"><i class="fas fa-plus-circle"></i> Ajouter un devoir</h3>
+                    
+                    <form action="{{ url_for('ajouter_devoir') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="classe_id" value="{{ current_user.classe_prof_id }}"> 
+                        
+                        <label>Titre</label>
+                        <input type="text" name="titre" placeholder="Ex: TP Réseau, Exercices..." required class="input-field">
+                        
+                        <label>Date</label>
+                        <input type="date" name="date_limite" required class="input-field">
+
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <div style="flex: 1;">
+                                <label>De (Heure début)</label>
+                                <input type="time" name="heure_debut" value="08:00" required class="input-field">
+                            </div>
+                            <div style="flex: 1;">
+                                <label>À (Heure fin)</label>
+                                <input type="time" name="heure_fin" value="10:00" required class="input-field">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-action" style="background-color: #3498db; color: white; margin-top: 15px;">
+                            Publier sur l'emploi du temps
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+                {% if current_user.role == 'etudiant' %}
+                <div class="stat-card" style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <h3 style="margin-top: 0; font-size: 1.1rem; color: #1e293b;"><i class="fas fa-tasks"></i> Évaluations à venir</h3>
+                    {% for d in devoirs %}
+                        <div style="padding: 10px 0; border-bottom: 1px solid #f1f5f9;">
+                            <p style="margin: 0; font-weight: 600; font-size: 0.9rem;">{{ d.titre }}</p>
+                            <p style="margin: 0; font-size: 0.8rem; color: #64748b;">Échéance : <strong>{{ d.date_limite }}</strong></p>
+                        </div>
+                    {% else %}
+                        <p style="font-size: 0.85rem; color: #64748b; margin-top: 10px;">Aucune évaluation à venir.</p>
+                    {% endfor %}
+                </div>
+
+                <div class="stat-card" style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <h3 style="margin-top: 0; font-size: 1.1rem; color: #27ae60;"><i class="fas fa-graduation-cap"></i> Mes Notes</h3>
+                    <div id="notes-container"><p style="font-size: 0.85rem; color: #64748b;"><i class="fas fa-spinner fa-spin"></i> Chargement de mes notes...</p></div>
+                </div>
+                {% endif %}
+            </aside>
+        </div>
+    </div>
+
+    {% if current_user.role in ['admin', 'professeur'] %}
+    <div id="vue-classes" class="view-section">
+        <h2 style="margin-bottom: 20px; color: #1e293b;"><i class="fas fa-users"></i> Gestion des Classes</h2>
+        
+        {% if current_user.role == 'admin' %}
+            
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div class="card-messagerie" style="flex: 1; border-left: 4px solid #27ae60;">
+                    <h3 style="margin-top: 0;">Créer une nouvelle Classe</h3>
+                    <form action="{{ url_for('creer_classe') }}" method="POST" style="display: flex; gap: 10px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="text" name="nom" placeholder="Ex: Master 1 SecOps" required class="input-field" style="max-width: 300px; margin: 0;">
+                        <button type="submit" class="btn-action" style="background: #27ae60; color: white; width: auto;">Ajouter</button>
+                    </form>
+                </div>
+
+                <div class="card-messagerie" style="flex: 1; border-left: 4px solid #f59e0b; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+    <h3 style="margin-top: 0; color: #1e293b; margin-bottom: 15px;">Affecter un Professeur</h3>
+    
+    <form action="{{ url_for('affecter_prof') }}" method="POST" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <select name="prof_id" required class="input-field" style="flex: 1; min-width: 180px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 0;">
+            <option value="">-- Choisir un prof --</option>
+            {% for p in professeurs %}
+                <option value="{{ p.id }}">{{ p.prenom }} {{ p.nom }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="classe_id" class="input-field" style="flex: 1; min-width: 180px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 0;">
+            <option value="">-- Sans classe (Retirer) --</option>
+            {% for c in toutes_classes %}
+                <option value="{{ c.id }}">{{ c.nom }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="btn-action" style="background-color: #f59e0b; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: auto; min-width: 100px; transition: 0.2s;">
+            <i class="fas fa-user-check"></i> Affecter
+        </button>
+    </form>
+</div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+            {% for c in toutes_classes %}
+                <div class="card-messagerie">
+                    <h3 style="margin-top: 0; color: #1e293b; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">🎓 Classe : {{ c.nom }}</h3>
+                    <p style="margin: 5px 0;"><i class="fas fa-chalkboard-teacher" style="color: #3498db; width: 25px;"></i> <strong>Professeur(s) :</strong> 
+                       {% for prof in c.professeur %}{{ prof.prenom }} {{ prof.nom }}{% if not loop.last %}, {% endif %}{% else %}<em style="color: #94a3b8;">Non assigné</em>{% endfor %}
+                    </p>
+                    <p style="margin: 15px 0 5px 0;"><i class="fas fa-user-graduate" style="color: #27ae60; width: 25px;"></i> <strong>Élèves ({{ c.eleves|length }}) :</strong></p>
+                    <div style="background: #f8fafc; padding: 10px; border-radius: 6px; max-height: 150px; overflow-y: auto;">
+                        {% for e in c.eleves %}
+                            <div style="font-size: 0.9rem; padding: 4px 0; border-bottom: 1px solid #e2e8f0;">{{ e.prenom }} {{ e.nom }}</div>
+                        {% else %}
+                            <div style="font-size: 0.9rem; color: #94a3b8; font-style: italic;">Aucun élève dans cette classe.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <p>Aucune classe n'a été créée pour le moment.</p>
+            {% endfor %}
+            </div>
+
+        {% elif current_user.role == 'professeur' %}
+            <div class="card-messagerie" style="border-top: 4px solid #1e293b;">
+                <h3 style="margin-top: 0; font-size: 1.3rem;">Ma Classe : {{ classe }}</h3>
+                <p style="color: #64748b; margin-bottom: 20px;">Cliquez sur un élève pour dérouler l'historique complet de ses notes.</p>
+                
+                <table style="width: 100%; text-align: left; border-collapse: collapse; background: #f8fafc; border-radius: 8px; overflow: hidden;">
+                    <tr style="background-color: #1e293b; color: white;">
+                        <th style="padding: 12px 15px;">Élève</th>
+                        <th style="padding: 12px 15px;">Email</th>
+                        <th style="padding: 12px 15px; text-align: right;">Moyenne de l'élève</th>
+                    </tr>
+                    
+                    {% for e in eleves %}
+                    <tr style="border-bottom: 1px solid #e2e8f0; transition: 0.2s; cursor: pointer;" onclick="document.getElementById('details-{{ e.id }}').style.display = document.getElementById('details-{{ e.id }}').style.display === 'none' ? 'table-row' : 'none'" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor='transparent'">
+                        <td style="padding: 12px 15px; font-weight: bold; color: #334155;">{{ e.prenom }} {{ e.nom }}</td>
+                        <td style="padding: 12px 15px; color: #64748b;">{{ e.email }}</td>
+                        
+                        {% if e.moyenne == 'Aucune note' %} {% set couleur_classe = 'texte-gris' %}
+                        {% elif e.moyenne >= 10 %} {% set couleur_classe = 'texte-vert' %}
+                        {% else %} {% set couleur_classe = 'texte-rouge' %} {% endif %}
+                        
+                        <td class="{{ couleur_classe }}" style="padding: 12px 15px; text-align: right; font-weight: bold; font-size: 1.1rem;">
+                            {{ e.moyenne }}{% if e.moyenne != 'Aucune note' %}<span style="font-size: 0.8rem; color: #94a3b8;">/20</span>{% endif %}
+                        </td>
+                    </tr>
+                    
+                    <tr id="details-{{ e.id }}" style="display: none; background-color: #f8fafc; border-bottom: 2px solid #cbd5e1;">
+                        <td colspan="3" style="padding: 15px 30px;">
+                            <div style="font-size: 0.9rem; color: #475569;">
+                                <strong style="color: #3498db;"><i class="fas fa-history"></i> Historique des notes :</strong>
+                                <ul style="margin-top: 10px; padding-left: 20px;">
+                                    {% for note in e.notes %}
+                                        <li>{{ note.devoir.titre if note.devoir else 'Devoir inconnu' }} : <strong>{{ note.valeur }}/20</strong></li>
+                                    {% else %}
+                                        <li><em>Aucune évaluation passée.</em></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" style="padding: 20px; text-align: center; color: #94a3b8;">Vous n'avez aucun élève assigné.</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+            
+            <div class="section-notes-prof" style="margin-top: 30px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+                <h2 style="margin-bottom: 20px; font-size: 1.3rem; color: #1e293b;"><i class="fas fa-edit"></i> Attribuer ou modifier une note</h2>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    {% for eleve in eleves %}
+                    <div style="background: #f8fafc; border-radius: 10px; padding: 18px; border: 1px solid #f1f5f9;">
+                        <div><strong style="color: #334155; font-size: 1rem;">👤 {{ eleve.prenom|capitalize }} {{ eleve.nom|capitalize }}</strong></div>
+                        <form action="{{ url_for('ajouter_note') }}" method="POST" style="display: flex; gap: 10px; align-items: center; background: #e0f2fe; padding: 10px; border-radius: 6px; margin-top: 10px;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <input type="hidden" name="etudiant_id" value="{{ eleve.id }}"/>
+                            <select name="devoir_id" required class="input-field" style="margin: 0; max-width: 200px; padding: 5px;">
+                                <option value="">-- Choisir un devoir --</option>
+                                {% for d in devoirs %} <option value="{{ d.id }}">{{ d.titre }}</option> {% endfor %}
+                            </select>
+                            <input type="number" name="valeur" step="0.5" min="0" max="20" placeholder="/20" required class="input-field" style="margin: 0; width: 70px; padding: 5px;">
+                            <button type="submit" class="btn-action" style="background-color: #0284c7; color: white; width: auto; padding: 6px 12px;">+ Ajouter</button>
+                        </form>
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px;">
+                            {% for note in eleve.notes %}
+                            <form action="{{ url_for('modifier_note', note_id=note.id) }}" method="POST" style="background: white; padding: 8px 15px; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;">{{ note.devoir.titre if note.devoir else 'Inconnu' }}</span>
+                                <input type="number" name="valeur" value="{{ note.valeur }}" step="0.5" min="0" max="20" class="input-field" style="margin:0; width: 60px; padding: 5px; text-align: center; font-weight: bold; color: #3498db;">
+                                <button type="submit" title="Mettre à jour" style="background: none; border: none; cursor: pointer; color: #22c55e;"><i class="fas fa-save" style="font-size: 1.1rem;"></i></button>
+                            </form>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div id="vue-messagerie" class="view-section">
+        <h2 style="margin-bottom: 20px; color: #1e293b;"><i class="fas fa-envelope"></i> Messagerie Interne</h2>
+        <div class="card-messagerie" style="border-left: 4px solid #3498db; background-color: #f8fafc;">
+            <h3 style="margin-top: 0; color: #1e293b;">Nouveau Message</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <select id="msg-destinataire" class="input-field"></select>
+                <input type="text" id="msg-sujet" placeholder="Sujet du message" class="input-field">
+                <textarea id="msg-contenu" rows="4" placeholder="Votre message..." class="input-field" style="resize: vertical;"></textarea>
+                
+                <button onclick="envoyerMessage()" class="btn-action" style="background-color: #3498db; color: white; width: auto; align-self: flex-start;">
+                    <i class="fas fa-paper-plane"></i> Envoyer le message
+                </button>
+                <div id="msg-feedback" style="font-weight: bold; margin-top: 5px;"></div>
+            </div>
+        </div>
+        <h3 style="margin-top: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; color: #1e293b;">Boîte de réception</h3>
+        <div id="messagerie-container"></div>
+    </div>
+
+    <div id="vue-profil" class="view-section">
+        <h2 style="margin-bottom: 20px; color: #1e293b;"><i class="fas fa-user-circle"></i> Mon Profil</h2>
+        <div class="card-messagerie" id="profil-container" style="max-width: 500px;"></div>
+    </div>
+
+</div>
+
+<script>
+    // ==========================================
+    // 1. VARIABLES GLOBALES
+    // ==========================================
+    let currentDate = new Date();
+    let currentView = 'semaine';
+
+    // ==========================================
+    // 2. INITIALISATION (Au chargement de la page)
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', () => {
+        // Générer la colonne des heures (08:00 à 18:00) pour l'emploi du temps
+        const gridTimes = document.getElementById('grid-times');
+        if (gridTimes) {
+            for (let i = 8; i <= 18; i++) {
+                const div = document.createElement('div');
+                div.className = 'time-slot';
+                div.textContent = `${i.toString().padStart(2, '0')}:00`;
+                gridTimes.appendChild(div);
+            }
+        }
+
+        // Charger l'emploi du temps par défaut
+        chargerDonnees('emploi');
+
+        // Charger les notes si la boîte existe (étudiants)
+        if (document.getElementById('notes-container')) {
+            chargerDonnees('notes');
+        }
+    });
+
+    // ==========================================
+    // 3. FONCTIONS D'AFFICHAGE & NAVIGATION (EDT)
+    // ==========================================
+    function updateHeaderDisplay() {
+        const display = document.getElementById('current-date-display');
+        const options = { month: 'long', year: 'numeric' };
+        
+        if (currentView === 'semaine') {
+            const monday = new Date(currentDate);
+            const day = monday.getDay();
+            monday.setDate(monday.getDate() + (day === 0 ? -6 : 1 - day));
+            const friday = new Date(monday);
+            friday.setDate(monday.getDate() + 4);
+            display.innerHTML = `Semaine du ${monday.getDate()} au ${friday.getDate()} ${friday.toLocaleDateString('fr-FR', options)}`;
+        } else {
+            const monthName = currentDate.toLocaleDateString('fr-FR', options);
+            display.innerHTML = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
+        }
+    }
+
+    function getApiLimits() {
+        let start = new Date(currentDate);
+        let end = new Date(currentDate);
+        
+        if (currentView === 'semaine') {
+            const day = start.getDay();
+            start.setDate(start.getDate() + (day === 0 ? -6 : 1 - day));
+            start.setHours(0, 0, 0, 0);
+            end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            end.setHours(23, 59, 59, 999);
+        } else {
+            start.setDate(1);
+            start.setHours(0, 0, 0, 0);
+            end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+            end.setHours(23, 59, 59, 999);
+        }
+        return { min: start.toISOString(), max: end.toISOString() };
+    }
+
+    window.changePeriod = function(dir) {
+        if (currentView === 'semaine') { 
+            currentDate.setDate(currentDate.getDate() + (dir * 7)); 
+        } else {
+            let targetDay = currentDate.getDate();
+            currentDate.setDate(1); 
+            currentDate.setMonth(currentDate.getMonth() + dir);
+            let lastDayOfTarget = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+            currentDate.setDate(Math.min(targetDay, lastDayOfTarget));
+        }
+        chargerDonnees('emploi');
+    };
+
+    window.changeView = function(view) {
+        if (view === 'aujourdhui') { 
+            currentDate = new Date(); 
+            currentView = 'semaine'; 
+        } else { 
+            currentView = view; 
+        }
+        
+        document.getElementById('btn-view-semaine').classList.toggle('active', currentView === 'semaine');
+        document.getElementById('btn-view-mois').classList.toggle('active', currentView === 'mois');
+        document.getElementById('week-view-container').style.display = currentView === 'semaine' ? 'block' : 'none';
+        document.getElementById('month-view-container').style.display = currentView === 'mois' ? 'block' : 'none';
+        
+        chargerDonnees('emploi');
+    };
+
+    function createMonthCell(num, isDimmed, dateObj) {
+        const cell = document.createElement('div');
+        cell.className = `month-cell ${isDimmed ? 'dimmed' : ''}`;
+        
+        if (dateObj && dateObj.toDateString() === new Date().toDateString()) {
+            cell.classList.add('today');
+        }
+        
+        cell.innerHTML = `<span class="month-day-num">${num}</span>`;
+        
+        if (dateObj) {
+            cell.style.cursor = 'pointer';
+            cell.onclick = () => { currentDate = new Date(dateObj); changeView('semaine'); };
+        }
+        document.getElementById('month-grid-body').appendChild(cell);
+        return cell;
+    }
+
+    function renderEvents(events) {
+        document.querySelectorAll('.grid-column').forEach(c => c.innerHTML = '');
+        const monthGrid = document.getElementById('month-grid-body');
+        if (monthGrid) monthGrid.innerHTML = '';
+
+        if (currentView === 'semaine') {
+            events.forEach((ev, i) => {
+                if (!ev.debut) return;
+                const start = new Date(ev.debut);
+                const end = new Date(ev.fin || ev.debut); 
+                const day = start.getDay();
+                if (day === 0 || day === 6) return; // Ignorer le week-end
+
+                const startH = start.getHours() + start.getMinutes() / 60;
+                const endH = end.getHours() + end.getMinutes() / 60;
+                
+                const card = document.createElement('div');
+                if (ev.is_devoir) {
+                    card.className = `course-card`;
+                    card.style.backgroundColor = '#e74c3c';
+                    card.style.border = '2px dashed white';
+                    card.style.zIndex = '20';
+                } else {
+                    card.className = `course-card color-${i % 5}`;
+                }
+
+                card.style.top = `${(startH - 8) * 60}px`;
+                card.style.height = `${Math.max(30, (endH - startH) * 60)}px`;
+                card.innerHTML = `<div class="course-title">${ev.titre}</div><div>${ev.salle}</div>`;
+                document.getElementById(`day-${day}`)?.appendChild(card);
+            });
+        } else {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const startOffset = (firstDay.getDay() + 6) % 7;
+            
+            const prevLastDay = new Date(year, month, 0).getDate();
+            for(let i = startOffset - 1; i >= 0; i--) { createMonthCell(prevLastDay - i, true); }
+            
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            for(let i = 1; i <= lastDay; i++) {
+                const dateObj = new Date(year, month, i);
+                const cell = createMonthCell(i, false, dateObj);
+                
+                events.forEach((ev, idx) => {
+                    const evDate = new Date(ev.debut);
+                    if(evDate.getDate() === i && evDate.getMonth() === month && evDate.getFullYear() === year) {
+                        const item = document.createElement('div');
+                        item.className = ev.is_devoir ? `month-event` : `month-event color-${idx % 5}`;
+                        if(ev.is_devoir) { item.style.backgroundColor = '#e74c3c'; item.style.border = '1px dashed white'; }
+                        item.textContent = ev.titre;
+                        cell.appendChild(item);
+                    }
+                });
+            }
+            const totalSoFar = monthGrid.children.length;
+            const remaining = (totalSoFar % 7 === 0) ? 0 : 7 - (totalSoFar % 7);
+            for(let i = 1; i <= remaining; i++) { createMonthCell(i, true); }
+        }
+    }
+
+    function showSection(sectionId) {
+        document.querySelectorAll('.view-section').forEach(section => section.classList.remove('active'));
+        document.querySelectorAll('.tab-nav button').forEach(btn => btn.classList.remove('active'));
+        
+        document.getElementById(sectionId).classList.add('active');
+        document.getElementById('btn-' + sectionId).classList.add('active');
+
+        if(sectionId === 'vue-messagerie') { 
+            chargerUtilisateurs(); 
+            chargerDonnees('messagerie'); 
+        } 
+        else if(sectionId === 'vue-profil') { 
+            chargerDonnees('profil'); 
+        }
+    }
+
+    // ==========================================
+    // 4. APPELS API (Communication avec Flask)
+    // ==========================================
+    async function chargerDonnees(categorie) {
+        try {
+            if (categorie === 'emploi') {
+                updateHeaderDisplay();
+                const { min, max } = getApiLimits();
+                const response = await fetch(`/api/data/emploi?start=${min}&end=${max}`);
+                if (response.status === 401) { window.location.href = '/'; return; }
+                const events = await response.json();
+                renderEvents(events);
+                return;
+            }
+
+            const response = await fetch('/api/data/' + categorie);
+            if (response.status === 401) { window.location.href = '/'; return; }
+            const data = await response.json();
+            
+            if (categorie === 'profil') {
+                const container = document.getElementById('profil-container');
+                container.innerHTML = `
+                    <div style="font-size: 1.1rem; line-height: 1.8;">
+                        <p><strong>Nom :</strong> ${data.nom}</p>
+                        <p><strong>Prénom :</strong> ${data.prenom}</p>
+                        <p><strong>Email :</strong> ${data.email}</p>
+                        <p><strong>Classe :</strong> ${data.classe}</p>
+                        <p><strong>Statut :</strong> <span style="text-transform: capitalize;">${data.statut}</span></p>
+                    </div>
+                    <div style="margin-top: 25px; text-align: right;">
+                        <a href="/logout" class="btn-action" style="background-color: #e74c3c; color: white; display: inline-block; width: auto;"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                    </div>
+                `;
+            } else if (categorie === 'messagerie') {
+                const container = document.getElementById('messagerie-container');
+                container.innerHTML = data.length === 0 ? '<div class="card-messagerie">Aucun message.</div>' : '';
+                data.forEach(msg => {
+                    container.innerHTML += `
+                        <div class="card-messagerie">
+                            <strong style="color: #1e293b;">De: ${msg.prenom} ${msg.expediteur_nom}</strong>
+                            <em style="display: block; margin: 10px 0; color: #3498db;">Objet: ${msg.sujet}</em>
+                            <p style="margin: 0; background: #f8fafc; padding: 15px; border-radius: 6px;">${msg.contenu}</p>
+                        </div>
+                    `;
+                });
+            } else if (categorie === 'notes') {
+                const container = document.getElementById('notes-container');
+                if(!container) return; 
+                
+                container.innerHTML = '';
+                if (data.length === 0) {
+                    container.innerHTML = '<p style="font-size: 0.85rem; color: #64748b; margin-top: 10px;">Aucune note pour le moment.</p>';
+                    return;
+                }
+                
+                data.forEach(note => {
+                    const color = note.note >= 10 ? '#27ae60' : '#e74c3c';
+                    container.innerHTML += `
+                        <div style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <p style="margin: 0; font-weight: 600; font-size: 0.9rem;">${note.matiere}</p>
+                            </div>
+                            <span style="font-weight: bold; color: ${color}; font-size: 1.1rem; background: #f8fafc; padding: 4px 8px; border-radius: 4px;">${note.note}/20</span>
+                        </div>
+                    `;
+                });
+            }
+        } catch (error) { 
+            console.error(`Erreur API pour la catégorie '${categorie}' :`, error); 
+        }
+    }
+
+    async function chargerUtilisateurs() {
+        try {
+            const response = await fetch('/api/users');
+            const users = await response.json();
+            const select = document.getElementById('msg-destinataire');
+            
+            select.innerHTML = '<option value="">-- Choisir un destinataire --</option>'; 
+            users.forEach(user => {
+                select.innerHTML += `<option value="${user.id}">${user.nom} ${user.prenom} (${user.role})</option>`;
+            });
+        } catch (error) {
+            console.error("Erreur lors du chargement des utilisateurs :", error);
+        }
+    }
+
+    async function envoyerMessage() {
+        // 1. Récupération des éléments HTML
+        const destinataireSelect = document.getElementById('msg-destinataire') || document.getElementById('select-destinataire');
+        const sujetInput = document.getElementById('msg-sujet') || document.getElementById('message-sujet');
+        const contenuInput = document.getElementById('msg-contenu') || document.getElementById('message-contenu');
+        const feedback = document.getElementById('msg-feedback');
+
+        // 2. Vérification des données
+        if (!destinataireSelect?.value || !contenuInput?.value) {
+            alert("Veuillez choisir un destinataire et écrire un message.");
+            return;
+        }
+
+        // 3. Préparation du feedback visuel
+        if (feedback) {
+            feedback.style.color = '#3498db';
+            feedback.textContent = "Envoi en cours...";
+        }
+
+        try {
+            // 4. Récupération du token CSRF
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            // 5. Envoi de la requête
+            const response = await fetch('/api/messages/send', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-CSRFToken': csrfToken 
+                },
+                body: JSON.stringify({ 
+                    destinataire_id: destinataireSelect.value, 
+                    sujet: sujetInput.value, 
+                    contenu: contenuInput.value 
+                })
+            });
+
+            const data = await response.json();
+
+            // 6. Gestion de la réponse
+            if (data.success) {
+                if (feedback) {
+                    feedback.style.color = '#2ecc71';
+                    feedback.textContent = "Message envoyé avec succès !";
+                }
+                
+                // Nettoyage des champs
+                sujetInput.value = '';
+                contenuInput.value = '';
+                
+                // Recharger les messages
+                if (typeof chargerDonnees === 'function') {
+                    chargerDonnees('messagerie'); 
+                }
+
+                // Effacer le message de succès après 3 secondes
+                setTimeout(() => { if(feedback) feedback.textContent = ''; }, 3000);
+
+            } else {
+                if (feedback) {
+                    feedback.style.color = '#e74c3c';
+                    feedback.textContent = data.message || "Erreur lors de l'envoi.";
+                }
+            }
+        } catch (error) {
+            console.error("Erreur Fetch Message :", error);
+            if (feedback) {
+                feedback.style.color = '#e74c3c';
+                feedback.textContent = "Erreur serveur (vérifiez votre connexion).";
+            }
+        }
+    }
+</script>
+{% endblock %}

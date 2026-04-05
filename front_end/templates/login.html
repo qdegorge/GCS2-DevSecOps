@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .login-wrapper {
+        background: linear-gradient(135deg, #26d0ce 0%, #1a9b8e 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        width: 100%;
+    }
+    
+    .login-container {
+        background-color: rgba(200, 240, 240, 0.95);
+        padding: 50px 40px;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        max-width: 350px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        text-align: center;
+    }
+    
+    .user-avatar {
+        width: 80px;
+        height: 80px;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 50%;
+        margin: 0 auto 30px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 40px;
+        color: #26d0ce;
+    }
+    
+    .login-container h2 {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #1a9b8e;
+        font-size: 28px;
+        font-weight: 300;
+        letter-spacing: 2px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+        position: relative;
+    }
+    
+    .input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    
+    .input-icon {
+        position: absolute;
+        left: 15px;
+        color: #1a9b8e;
+        font-size: 18px;
+    }
+    
+    .login-container input[type="text"], .login-container input[type="password"] {
+        width: 100%;
+        padding: 12px 15px 12px 45px;
+        border: none;
+        border-radius: 6px;
+        background-color: white;
+        color: #333;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+    
+    .login-container input[type="text"]:focus, .login-container input[type="password"]:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(38, 208, 206, 0.3);
+    }
+    
+    .login-container input::placeholder {
+        color: #999;
+    }
+
+    .show-password {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 6px;
+        margin-top: 8px;
+        font-size: 12px;
+    }
+
+    .show-password input[type="checkbox"] {
+        cursor: pointer;
+        width: 14px;
+        height: 14px;
+    }
+
+    .show-password label {
+        cursor: pointer;
+        color: #1a9b8e;
+        margin: 0;
+    }
+    
+    .button-group {
+        margin-top: 25px;
+    }
+    
+    .login-container button {
+        width: 100%;
+        padding: 12px;
+        background-color: #1a9b8e;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .login-container button:hover {
+        background-color: #158078;
+        box-shadow: 0 5px 15px rgba(26, 155, 142, 0.4);
+    }
+    
+    .footer-options {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        font-size: 13px;
+    }
+    
+    .remember-me {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .remember-me input[type="checkbox"] {
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+    }
+    
+    .remember-me label {
+        cursor: pointer;
+        color: #1a9b8e;
+        margin: 0;
+    }
+    
+    .forgot-password a {
+        color: #1a9b8e;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .forgot-password a:hover {
+        text-decoration: underline; 
+        color: #0f6b63;
+    }
+</style>
+
+<div class="login-wrapper">
+    <div class="login-container">
+        <div class="user-avatar">👤</div>
+        <h2>LOGIN</h2>
+        
+        <form action="/login" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="username" name="username" placeholder="Username" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="password" name="password" placeholder="Password" required>
+                </div>
+                <div class="show-password">
+                    <input type="checkbox" id="showPasswordCheckbox">
+                    <label for="showPasswordCheckbox">Show password</label>
+                </div>
+            </div>
+            
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                {% for message in messages %}
+                  <div style="color: #d32f2f; text-align: center; margin: 10px 0; font-weight: bold; background-color: rgba(211, 47, 47, 0.1); padding: 8px; border-radius: 4px;">
+                    ✗ {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+            
+            <div class="button-group">
+                <button type="submit">LOGIN</button>
+            </div>
+            
+            <div class="footer-options">
+                <div class="remember-me">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Remember me</label>
+                </div>
+                <div class="forgot-password">
+                    <a href="#forgot">Forgot password?</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const passwordInput = document.getElementById('password');
+    const showPasswordCheckbox = document.getElementById('showPasswordCheckbox');
+
+    showPasswordCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            passwordInput.type = 'text';
+        } else {
+            passwordInput.type = 'password';
+        }
+    });
+</script>
+{% endblock %}
