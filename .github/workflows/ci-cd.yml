@@ -32,8 +32,8 @@ jobs:
 
       - name: 02 - Scan des vulnérabilités des dépendances (pip-audit & safety)
         run: |
-          pip-audit -r requirements.txt
-          safety check -r requirements.txt
+          pip-audit -r back_end/requirements.txt
+          safety check -r back_end/requirements.txt
 
 
       - name: 03 - Analyse SAST (SonarCloud)

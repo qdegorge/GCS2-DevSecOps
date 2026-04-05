@@ -5,11 +5,11 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copier les fichiers de dépendances et les installer
-COPY requirements.txt .
+COPY back_end/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copier tout le reste du code source
-COPY . .
+COPY back_end/ .
 
 # Exposer le port utilisé par Flask
 EXPOSE 5050
