@@ -36,8 +36,9 @@ Attendez que le terminal affiche Running on http://0.0.0.0:5050.
 Initialiser la Base de données (Création des tables et comptes)
 Laissez le premier terminal tourner. Ouvrez un nouveau terminal (toujours à la racine du projet) et exécutez le script d'initialisation à l'intérieur du conteneur :
 
-Bash
+```bash
 docker exec -it secops_flask python init.py
+```
 (Si une erreur de fichier introuvable survient, essayez : docker exec -it secops_flask python back_end/init.py)
 
 Accéder à l'application
